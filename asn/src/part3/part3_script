@@ -1,0 +1,7 @@
+#!/bin/bash
+
+/bin/echo Running on host: `hostname`.
+/bin/echo In directory: `pwd`
+/bin/echo Starting on: `date`
+
+../../bin/linux/release/part3

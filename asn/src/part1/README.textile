@@ -1,0 +1,62 @@
+h1. Part 1: Library Performance (20 points)
+
+In this problem we explore the comparative performance of different sorting
+libraries for data in different locations and of different types. The library
+routines are stdlib's @qsort@, STL's @std::sort@, and Thrust's @thrust::sort@.
+The first two are CPU libraries, and the third is a GPU library.
+
+h2. Parameters
+
+We will explore a fairly large parameter space in our tests by running a test
+for every combination of the following parameters:
+
+	* Routine: Stdlib, STL, Thrust
+	* Data Type: @float@, @int@, @unsigned short@
+	* Number of Elements: 1K to 8M by powers of 2
+	* Source: Host, Device
+	* Destination: Host, Device
+
+h2. Implementation (10 points) 
+
+Depending on source and destination location, you may have to perform copy-in or
+copy-out of parameters. For example, if you are performing a Thrust sort with
+Source and Destination of Host, it is necessary to copy the data from the host
+to the device, sort it, and copy it back from the device to host. You should
+fill in the stubs in *part1.inl*.
+
+With Thrust, make sure you are actually invoking the GPU version of the code. If
+you pass in a CPU iterator to the sort routine, such as a raw pointer, an STL
+iterator, or a Thrust @host_vector@, Thrust will simply call @stl::sort@ on it.
+We had a student accidentally do this before. To call @Thrust::sort@ on a
+pointer to device memory without copying the data there to a new structure, you
+should wrap it in a typed @thrust::device_ptr@.
+
+h2. Questions (10 points)
+
+After completing this problem, answer the following questions:
+
+# Why might @std::sort@ perform faster than @qsort@? (this is a C++ question).
+(3 points)
+I think these two functino are implemented by the same algorithm. The std::sort is faster because it uses a lot of inline functions, which can be optimized during compiling under release version. If we compile and run the code under debug rather than release, these two sorting function should have comparable performance.
+
+# Why does @thrust::sort@ perform better for @unsigned short@ than for larger
+ types? (3 points)
+
+  I think this is because the GPU core is much simple than CPU core, it do not have those caches. So it's easier for GPU core to process simple types. Acutally, we can see that in CPU, the sorting of unsigned short is also faster than the other two type, but the difference(ratio) in time is relatively less than that of GPU
+
+
+# According to your numbers, at what point does it make sense to sort data on
+ the GPU even if it starts and ends on the CPU, assuming such an inflection
+ point exists? (2 points)
+
+  the length of the array is greater than 16K
+
+# Approximately how does @Thrust::sort@ appear to scale with increasing dataset
+ size? (Big-O estimation from empirical data). What about @std::sort@ and
+ @qsort@? (2 points)
+
+  Thrust::sort  O(2^((log n)-a))   a is a constant.
+  both std::sort and qsort should be O(n log n)
+
+Note: This isn't a terribly fair speed comparison, since the lab machine has two
+Pentium IV-era Xeon CPUs against a newer GT200-class GPU.

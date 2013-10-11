@@ -1,0 +1,75 @@
+h1. Part 2: Data Transfer/Kernel Launch (23 points)
+
+This part of the assignment is based on Chapter 3 of the "CUDA Programming
+Guide.":http://developer.download.nvidia.com/compute/DevZone/docs/html/C/doc/CUDA_C_Programming_Guide.pdf
+
+h2. Implementation (13 points)
+
+For this problem, you will implement different @ItemProcessors@ that receive a
+sequence of work items to process. You will primarily work in *part2.cpp* and
+*part2_kernel.cu*. The kernel we will be invoking is already written; it is a
+simplified version of vertex soft-skinning, but the kernel is not very relevant
+to the problem. Once all items have been given, the calling code will call
+@cudaThreadSynchronize()@ and wait for the results.
+
+There are four different schemes of downloading data and launching kernels that
+we will explore:
+
+* Basic - what you're used to, where we use @cudaMemcpy()@ to transfer data,
+then invoke a kernel on a default stream
+* Asynchronous - uses a separate stream for each work item, and uses
+@cudaMemcpyAsync()@ to avoid blocking the host when downloading each item.
+* Streaming - takes advantage of the fact that we have a very simple, pointwise
+kernel; it should spread each work item across multiple streams, and download
+it with multiple @cudaMemcpyAsync()@/kernel invocations. This enables work to
+begin before the work item has been entirely downloaded.
+* Mapped - avoids a direct copy of the data entirely by mapping host memory into
+device memory and accessing it on-demand across the PCIe bus.
+
+Basic has already been implemented for you.
+
+h2. Questions (10 points)
+
+After completing these 4 schemes, answer the following questions:
+
+# Did any of the schemes perform differently than you expected? If so, why do
+you think that is? (3 points)
+
+  streamming perfomrs much worse than I had expected. Because, streaming scheme allows more concurrent execution, which should improve the performance.
+  after I saw the notes below, I know why. "Quadro FX 5800 we are using does not support concurrent kernel execution."
+  
+# Which scheme performs poorly if data should be kept resident on the device/is
+accessed repeatedly? Why? (2 points)
+
+  basic, it will blocking the host when downloading each item.  More accesses more blocking.
+
+# Which scheme scales best with large work items? Why? (2 points)
+  streamming, it can split each work item into several pieces and execute it at the same time.  
+
+# Why is it dangerous to allocate and maintain large amounts of pinned memory?
+(3 points)
+  Allocating pinned memory is time consuming and it also consumes a lot of system resources.It will never be paged out, thus reduces amount of physical memory available to the OS for paging. In a word, allocating too much pinned memory will decrease the system overall performance.
+
+h2. Notes
+
+These examples all use fairly large amounts of pinned host memory. This is
+memory that will not be paged out by the virtual memory system. All host to
+device memory transfers technically take place from pinned memory since the
+device ha to know that the data being copied won't be paged out or moved during
+the transfer. Normally however, the driver automatically places host data in a
+pinned memory buffer.
+
+For some of these techniques, we will be exposing the pinned host memory. Be
+aware that allocating too much pinned memory can destabilize the system. Pinned
+memory allocations are quite slow, since they require a system call, so a
+general tip is to allocate large chunks in one shot. Pinned memory allocations
+for this assignment part should be handled for you.
+
+Notice that even the basic launch copies memory from pinned host memory, so they
+already get significantly better transfer performance than copying from
+ordinarily allocated memory.
+
+Also bear in mind that the Quadro FX 5800 we are using does not support
+concurrent kernel execution. Thus, we can use asynchronous transfers only for
+hiding transfer latency, not for executing multiple kernels concurrently. We
+would get even better results otherwise.

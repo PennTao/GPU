@@ -1,0 +1,49 @@
+h1. Part 3: Global Memory Performance (25 points)
+
+This final part will look at global memory performance for copy, transpose, and
+scattered writes.
+
+h2. Implementation (15 points)
+
+For a matrix of 2048x2048 floats, create naive and optimized versions for the
+following three operations:
+
+# Copy
+# Matrix Transpose
+# Scattered Writes
+
+There are 6 kernel functions in *part3_kernel.cu* for naive and optimized
+versions of these functions. Naive copy has been implemented for you. Create the
+rest of the kernels and fill out the launcher stubs to execute these operations.
+Your naive versions should be simple but not artificially handicapped.
+
+You should give a good effort at optimizing performance for the optimized
+versions, starting by looking at these techniques:
+
+# Tiling
+# Coalescing
+# Resolving shared memory bank conflicts
+# Optimizing block and thread count
+# Partition camping
+
+h2. Analysis (10 points)
+
+Talk about the analytical/empirical strategies you took towards selecting
+optimizations and tuning parameters. Besides execution time, you may want to
+look at speedup (relative to naive) and memory throughput as other useful
+metrics.
+
+
+if the number of data is too larger, use tiling(in this part, we don't need it, it doesn't exceed the limit G80 512 threads per blk)
+if its not accessing random places in memory, figure out the given matrix is stored row-major or col-major, then try memory coalescing accordingly.
+if memory coalescing is not working, try partition camping.
+make the blocksize and gridsize bigger, if the performance drop, make it smaller, after several tries, a optimized  size of block can be got.
+
+
+If you feel that a particular problem cannot be improved much from the naive
+solution, explain clearly why you think it isn't amenable to optimization.
+
+I think the scatter cannot be improved much from the naive solution. Because when doing scattering, we read or write to a random location in the memory, accessing random location results in much lower bandwidth and it can't be solved by memory coalescing or partition camping. There is also no point in using tiling since the dimension is not so large. I just modified the block size to improve its performance a little.
+
+Note: with Scattered Writes, you do not need to worry about race conditions with
+writes since the indices are a permutation.
